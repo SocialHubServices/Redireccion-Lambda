@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: |
+  Redireccion of the WebHook of the lambda functions
+Globals:
+  Function:
+    Timeout: 3
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  RedireccionWebHook:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: RedireccionWebHook
+      StageName: SocialHub_Redireccion
+      DefinitionBody:
+        openapi: '3.0'
+        info: {}
+        paths:
+          /Api/RedireccionWebHook:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RedireccionWebHookFunction.Arn}/invocations
+              responses: {}
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RedireccionWebHookFunction.Arn}/invocations
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Cors:
+        MaxAge: 5
+  RedireccionWebHookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: webhook-redireccion/
+      Role: arn:aws:iam::732147627748:role/LambdaAccessToRDS
+      Handler: app.lambdaHandler
+      Runtime: nodejs18.x
+      MemorySize: 3008
+      Timeout: 30
+      Events:
+        RedireccionWebHookPOSTApiRedireccionWebHook:
+          Type: Api
+          Properties:
+            Path: /Api/RedireccionWebHook
+            Method: POST
+            RestApiId: !Ref RedireccionWebHook
+        RedireccionWebHookGETApiRedireccionWebHook:
+          Type: Api
+          Properties:
+            Path: /Api/RedireccionWebHook
+            Method: GET
+            RestApiId: !Ref RedireccionWebHook
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-08c1c1d522d246522
+        SubnetIds:
+          - subnet-08aeac160dc501ea2
